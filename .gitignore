@@ -1,6 +1,10 @@
 # tier4_perception_dataset_tools
 /data
 tests/samplefiles/data
+/lib/ros2_numpy
+
+# VS Code
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
