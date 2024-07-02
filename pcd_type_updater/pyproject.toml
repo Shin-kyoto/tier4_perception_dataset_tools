@@ -1,0 +1,14 @@
+[tool.poetry]
+name = "pcd-type-updater"
+version = "0.1.0"
+description = ""
+authors = ["Shin-kyoto <aquashin0202@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+ros2-numpy = {path = "./lib/ros2_numpy"}
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
