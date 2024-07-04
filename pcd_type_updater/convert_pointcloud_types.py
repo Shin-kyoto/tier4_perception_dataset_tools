@@ -436,35 +436,23 @@ def is_new_xyzircaedt_layout(msg: PointCloud2):
 
 
 def convert_xyzi_to_xyzirc(msg: PointCloud2):
-    input_array = ros2_numpy.numpify(msg)
+    input_array: np.ndarray = ros2_numpy.numpify(msg)
     num_points = len(input_array["intensity"])
-    if type(input_array) is np.ndarray:
-        converted_array = np.zeros(
-            (num_points,),
-            dtype=[
-                ("x", np.float32),
-                ("y", np.float32),
-                ("z", np.float32),
-                ("intensity", np.uint8),
-                ("return_type", np.uint8),
-                ("channel", np.uint16),
-            ],
-        )
-        converted_array["x"] = input_array["x"]
-        converted_array["y"] = input_array["y"]
-        converted_array["z"] = input_array["z"]
-        converted_array["intensity"] = input_array["intensity"].astype(np.uint8)
-    elif "xyz" in input_array:
-        converted_array = {
-            "xyz": np.zeros((num_points, 3), dtype=np.float32),
-            "intensity": np.zeros((num_points, 1), dtype=np.uint8),
-            "return_type": np.zeros((num_points, 1), dtype=np.uint8),
-            "channel": np.zeros((num_points, 1), dtype=np.uint16),
-        }
-        converted_array["xyz"] = input_array["xyz"]
-        converted_array["intensity"] = input_array["intensity"].astype(np.uint8)
-    else:
-        raise ValueError("No x, y, z fields found in the input array")
+    converted_array = np.zeros(
+        (num_points,),
+        dtype=[
+            ("x", np.float32),
+            ("y", np.float32),
+            ("z", np.float32),
+            ("intensity", np.uint8),
+            ("return_type", np.uint8),
+            ("channel", np.uint16),
+        ],
+    )
+    converted_array["x"] = input_array["x"]
+    converted_array["y"] = input_array["y"]
+    converted_array["z"] = input_array["z"]
+    converted_array["intensity"] = input_array["intensity"].astype(np.uint8)
 
     converted_msg = ros2_numpy.msgify(PointCloud2, converted_array)
     converted_msg.header = msg.header
