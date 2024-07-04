@@ -548,7 +548,7 @@ def convert_xyziradrt_to_xyzircaedt(msg: PointCloud2):
     return converted_msg
 
 
-def process_bag(bag_path, output_folder):
+def process_bag(bag_path: Path, output_folder: Path):
     # Bag Reader
     input_bag_path = str(bag_path)
     input_storage_options, input_converter_options = get_rosbag_options(input_bag_path)
