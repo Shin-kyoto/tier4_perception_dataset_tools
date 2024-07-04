@@ -3,8 +3,9 @@ import argparse
 from pathlib import Path
 import yaml
 import subprocess
-from convert_pointcloud_types import process_bag
+from convert_pointcloud_types import process_bag, get_rosbag_options
 from constant import current_webauto_version
+import rosbag2_py
 
 
 class WebAutoT4DatasetInterface:
@@ -96,6 +97,62 @@ class WebAutoT4DatasetInterface:
         subprocess.run(upload_cmd, shell=True)
 
 
+def get_topic_nums(bag_path: Path):
+    input_bag_path = str(bag_path)
+    input_storage_options, input_converter_options = get_rosbag_options(input_bag_path)
+
+    reader = rosbag2_py.SequentialReader()
+    reader.open(input_storage_options, input_converter_options)
+
+    topic_types = reader.get_all_topics_and_types()
+
+    # Create a map for quicker lookup
+    type_map = {
+        topic_types[i].name: topic_types[i].type for i in range(len(topic_types))
+    }
+    topic_metadata = {
+        topic_types[i].name: topic_types[i] for i in range(len(topic_types))
+    }
+
+    # bag_path直下にあるyamlファイルを読み込む
+    # bag_path直下からmetadata.yamlファイルを探す
+    yaml_path = sorted(bag_path.glob("metadata.yaml"))[0]
+
+    with open(yaml_path, "r") as file:
+        rosbag_metadata_yaml = yaml.safe_load(file)
+
+    # topic_nameとmessage_countのマップを作成
+    topic_nums = {
+        topic["topic_metadata"]["name"]: topic["message_count"]
+        for topic in rosbag_metadata_yaml["rosbag2_bagfile_information"][
+            "topics_with_message_count"
+        ]
+    }
+    return type_map, topic_metadata, topic_nums
+
+
+def compare(t4dataset_dir_path: Path, rosbag_name_old: str, rosbag_name_new: str):
+    """
+    変換前後で
+        topic数が一緒であるべき
+        concatenated_pcdについて
+            点群数が一緒であるべき
+            xyzの値が一緒であるべき
+            intensityの値が、tolerance = hogeで一緒であるべき
+    R,Cがdummyであるべき
+    """
+    bag_path_old: Path = t4dataset_dir_path / rosbag_name_old
+    bag_path_new: Path = t4dataset_dir_path / rosbag_name_new
+
+    topic_types_old, topic_metadata_old, topic_nums_old = get_topic_nums(bag_path_old)
+    topic_types_new, topic_metadata_new, topic_nums_new = get_topic_nums(bag_path_new)
+
+    # topic_nums_oldとtopic_nums_newが一致するか確認
+    assert (
+        topic_nums_old == topic_nums_new
+    ), "topic_nums_old and topic_nums_new are different"
+
+
 def main(args):
     # Load YAML configuration
     with open(args.config, "r") as file:
@@ -129,7 +186,11 @@ def main(args):
                 shell=True,
             )
             # 2つのrosbagの内容を比較
-            # compare(t4dataset_dir_path:Path = work_dir_path / dataset_version, rosbag_name_old:str = "input_bag_old", rosbag_name_new:str = "input_bag")
+            compare(
+                t4dataset_dir_path=work_dir_path / dataset_version,
+                rosbag_name_old="input_bag_old",
+                rosbag_name_new="input_bag",
+            )
             # 比較結果が問題なければ、元のディレクトリを削除
             # t4datasetのディレクトリをWeb.Autoにアップロード
             # webauto_t4dataset_interface.push(work_dir_path / dataset_version)
