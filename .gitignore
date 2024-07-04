@@ -3,6 +3,9 @@
 tests/samplefiles/data
 /lib/ros2_numpy
 
+# tentative
+/pcd_type_updater/2
+
 # VS Code
 .vscode/
 
