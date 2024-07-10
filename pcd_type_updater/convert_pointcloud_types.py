@@ -55,7 +55,7 @@ def create_topic(writer, topic_name, metadata):
 
 
 def is_xyz_layout(msg: PointCloud2):
-    if len(msg.fields) == 3:
+    if len(msg.fields) != 3:
         return False
 
     x_field: PointField = msg.fields[0]
@@ -125,6 +125,11 @@ def is_old_xyzi_layout(msg: PointCloud2):
     if (
         i_field.name != "intensity"
         or i_field.offset != 12
+        or i_field.datatype != PointField.FLOAT32
+        or i_field.count != 1
+    ) and (
+        i_field.name != "intensity"
+        or i_field.offset != 16
         or i_field.datatype != PointField.FLOAT32
         or i_field.count != 1
     ):
@@ -435,6 +440,32 @@ def is_new_xyzircaedt_layout(msg: PointCloud2):
     return True
 
 
+def convert_xyz_to_xyzirc(msg: PointCloud2):
+    input_array: np.ndarray = ros2_numpy.numpify(msg)
+    num_points = len(input_array["x"])
+    converted_array = np.zeros(
+        (num_points,),
+        dtype=[
+            ("x", np.float32),
+            ("y", np.float32),
+            ("z", np.float32),
+            ("intensity", np.uint8),
+            ("return_type", np.uint8),
+            ("channel", np.uint16),
+        ],
+    )
+    converted_array["x"] = input_array["x"]
+    converted_array["y"] = input_array["y"]
+    converted_array["z"] = input_array["z"]
+
+    converted_msg = ros2_numpy.msgify(PointCloud2, converted_array)
+    converted_msg.header = msg.header
+
+    assert is_new_xyzirc_layout(converted_msg)
+
+    return converted_msg
+
+
 def convert_xyzi_to_xyzirc(msg: PointCloud2):
     input_array: np.ndarray = ros2_numpy.numpify(msg)
     num_points = len(input_array["intensity"])
@@ -583,7 +614,7 @@ def process_bag(bag_path: Path, output_folder: Path):
             elif is_old_xyziradrt_layout(msg):
                 converted_msg = convert_xyziradrt_to_xyzircaedt(msg)
             elif is_xyz_layout(msg):
-                converted_msg = msg
+                converted_msg = convert_xyz_to_xyzirc(msg)
             else:
                 print("Unsupported layout !. leaving the pointcloud as is")
                 converted_msg = msg
