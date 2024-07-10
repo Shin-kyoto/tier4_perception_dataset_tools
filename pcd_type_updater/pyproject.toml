@@ -8,6 +8,8 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.10"
 ros2-numpy = {path = "./lib/ros2_numpy"}
+transforms3d = "^0.4.2"
+pyyaml = "^6.0.1"
 
 [build-system]
 requires = ["poetry-core"]
