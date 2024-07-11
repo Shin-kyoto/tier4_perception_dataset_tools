@@ -8,6 +8,7 @@ from convert_pointcloud_types import process_bag
 from constant import current_webauto_versions
 from compare_bags import ConvertedRosbagValidator
 
+
 class WebAutoT4DatasetInterface:
     def __init__(self, project_id: str, work_dir_path: Path):
         self.project_id = project_id
@@ -95,6 +96,7 @@ class WebAutoT4DatasetInterface:
         )
         subprocess.run(upload_cmd, shell=True)
 
+
 def main(args):
     # Load YAML configuration
     with open(args.config, "r") as file:
@@ -108,7 +110,7 @@ def main(args):
 
         for t4dataset_id in config["t4dataset_ids"]:
             dataset_id, rosbag_name = webauto_t4dataset_interface.pull(t4dataset_id)
-            print(f"download t4dataset to {work_dir_path}")
+            print(f"Download t4dataset to {work_dir_path}")
 
             rosbag_path_old: Path = work_dir_path / dataset_id / "input_bag"
             rosbag_path_new: Path = work_dir_path / dataset_id / f"{rosbag_name}"
