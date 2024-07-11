@@ -182,6 +182,9 @@ class ConvertedRosbagValidator:
                 return False
         return True
 
+    def _is_intensity_all_zero(self) -> bool:
+        return np.allclose(self.all_intensity_values_new, 0.0)
+
     def _compare_intensity_in_pointcloud(
         self,
         pointcloud_msgs_new: PointCloud2,
@@ -315,5 +318,8 @@ class ConvertedRosbagValidator:
 
         if self.visualize_intensity:
             self._visualize_intensity()
+
+        if self._is_intensity_all_zero():
+            self.logger.info("Intensity values are all zero.")
 
         return True
