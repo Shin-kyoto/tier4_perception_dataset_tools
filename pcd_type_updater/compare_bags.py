@@ -54,14 +54,14 @@ class T4datasetRosbag:
 
     @staticmethod
     def _topic_nums_yaml(bag_path: Path):
-        # bag_path直下にあるyamlファイルを読み込む
-        # bag_path直下からmetadata.yamlファイルを探す
+        """
+        Creates a dict of topic_name and message_count from the metadata.yaml file
+        """
+        # load metadata.yaml
         yaml_path = sorted(bag_path.glob("metadata.yaml"))[0]
-
         with open(yaml_path, "r") as file:
             rosbag_metadata_yaml = yaml.safe_load(file)
 
-        # topic_nameとmessage_countのマップを作成
         return {
             topic["topic_metadata"]["name"]: topic["message_count"]
             for topic in rosbag_metadata_yaml["rosbag2_bagfile_information"][
@@ -73,7 +73,7 @@ class T4datasetRosbag:
     def _topic_infos(reader: rosbag2_py.SequentialReader):
         topic_types = reader.get_all_topics_and_types()
 
-        # Create a map for quicker lookup
+        # create a map for quicker lookup
         type_map = {
             topic_types[i].name: topic_types[i].type for i in range(len(topic_types))
         }
@@ -119,17 +119,17 @@ class ConvertedRosbagValidator:
         return True
 
     def _compare_topic_infos(self) -> bool:
-        # topic_nums_oldとtopic_nums_newが一致するか確認
+        # check if the number of topics is the same between the old and new rosbags
         if not self.rosbag_new.topic_nums == self.rosbag_old.topic_nums:
             print("Numbers of topic between old rosbag and new rosbag are different")
             return False
 
-        # topic_types_oldとtopic_types_newが一致するか確認
+        # check if the topic types are the same between the old and new rosbags
         if not self.rosbag_new.topic_type_map == self.rosbag_old.topic_type_map:
             print("Topic types between old rosbag and new rosbag are different")
             return False
 
-        # topic_metadata_oldとtopic_metadata_newが一致するか確認
+        # check if the topic metadata is the same between the old and new rosbags
         for topic_name in self.rosbag_new.topic_metadata.keys():
             if not self.rosbag_new.topic_metadata[topic_name].equals(
                 self.rosbag_old.topic_metadata[topic_name]
@@ -198,7 +198,7 @@ class ConvertedRosbagValidator:
                 print("XYZ value between old rosbag and new rosbag are different")
                 return False
 
-            # intensityの値が、tolerance = hogeで一緒であるべき
+            # intensityの値が、所与のtoleranceの範囲で一緒であるべき
             if not self._compare_intensity_in_pointcloud(
                 pointcloud_msg_new, pointcloud_msg_old, tolerance=0.1
             ):

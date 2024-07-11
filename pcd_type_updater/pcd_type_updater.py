@@ -40,7 +40,7 @@ class WebAutoT4DatasetInterface:
         return dataset_path
 
     def _download_dataset(self, t4dataset_id: str) -> Path:
-        print(f"Downloading t4dataset: {t4dataset_id}")
+        print(f"\nDownloading t4dataset: {t4dataset_id}")
 
         download_cmd = (
             f"webauto data annotation-dataset pull "
@@ -75,6 +75,7 @@ class WebAutoT4DatasetInterface:
         )[0].stem
         # 右端から，_0を削除
         rosbag_name = rosbag_name[: rosbag_name.rfind("_")]
+
         move_cmd = f"mv {t4dataset_path_original} {self.work_dir_path / dataset_id}"
         subprocess.run(move_cmd, shell=True)
 
@@ -110,12 +111,11 @@ def main(args):
 
         for t4dataset_id in config["t4dataset_ids"]:
             dataset_id, rosbag_name = webauto_t4dataset_interface.pull(t4dataset_id)
-            print(f"Download t4dataset to {work_dir_path}")
 
             rosbag_path_old: Path = work_dir_path / dataset_id / "input_bag"
             rosbag_path_new: Path = work_dir_path / dataset_id / f"{rosbag_name}"
             process_bag(rosbag_path_old, rosbag_path_new)
-            # 元のディレクトリを"input_bag"から"input_bag_old"に変更
+            # 元のrosbagディレクトリを"input_bag"から"input_bag_old"に変更
             subprocess.run(
                 f"mv {rosbag_path_old} {work_dir_path / dataset_id / 'input_bag_old'}",
                 shell=True,
