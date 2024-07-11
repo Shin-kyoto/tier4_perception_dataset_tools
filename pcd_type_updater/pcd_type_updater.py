@@ -86,7 +86,7 @@ class WebAutoT4DatasetInterface:
         Args:
             t4dataset_path (Path): Path to the t4dataset
         """
-        print(f"Uploading t4dataset: {t4dataset_path}")
+        print(f"Uploading t4dataset: {t4dataset_path}\n")
 
         upload_cmd = (
             f"webauto data annotation-dataset push-version"
@@ -141,7 +141,10 @@ def main(args):
                 shell=True,
             )
             # t4datasetのディレクトリをWeb.Autoにアップロード
-            # webauto_t4dataset_interface.push(work_dir_path / dataset_id, t4dataset_id)
+            if args.upload:
+                webauto_t4dataset_interface.push(
+                    work_dir_path / dataset_id, t4dataset_id
+                )
 
             # アップロード後のディレクトリを削除
             subprocess.run(
