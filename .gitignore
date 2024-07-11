@@ -3,8 +3,9 @@
 tests/samplefiles/data
 /lib/ros2_numpy
 
-# tentative
-/pcd_type_updater/2
+# pcd_type_updater
+/pcd_type_updater/log
+/pcd_type_updater/config/t4dataset_ids.yaml
 
 # VS Code
 .vscode/
