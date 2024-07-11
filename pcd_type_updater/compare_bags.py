@@ -3,6 +3,9 @@ import yaml
 from pathlib import Path
 from collections import defaultdict
 from typing import NamedTuple
+import plotly.graph_objects as go
+import plotly.subplots as psub
+
 from sensor_msgs.msg import PointCloud2
 from rclpy.serialization import deserialize_message
 from rosidl_runtime_py.utilities import get_message
@@ -85,7 +88,13 @@ class T4datasetRosbag:
 
 
 class ConvertedRosbagValidator:
-    def __init__(self, rosbag_path_new: str, rosbag_path_old: str):
+    def __init__(
+        self,
+        rosbag_path_new: str,
+        rosbag_path_old: str,
+        t4dataset_id: str,
+        visualize_intensity: bool = False,
+    ):
         self.rosbag_new = T4datasetRosbag(rosbag_path_new)
         self.rosbag_new.read()
         if not self.check_topic_num_consistency_with_yaml(
@@ -98,6 +107,12 @@ class ConvertedRosbagValidator:
         self.check_topic_num_consistency_with_yaml(
             self.rosbag_old.topic_nums, self.rosbag_old.topic_nums_yaml
         )
+
+        self.visualize_intensity: bool = visualize_intensity
+        self.t4dataset_id: str = t4dataset_id
+        if self.visualize_intensity:
+            self.all_intensity_values_new: list[int] = []
+            self.all_intensity_values_old: list[float] = []
 
     @staticmethod
     def check_topic_num_consistency_with_yaml(
@@ -159,14 +174,18 @@ class ConvertedRosbagValidator:
                 return False
         return True
 
-    @staticmethod
     def _compare_intensity_in_pointcloud(
+        self,
         pointcloud_msgs_new: PointCloud2,
         pointcloud_msgs_old: PointCloud2,
         tolerance: float,
     ) -> bool:
         pointcloud_array_new: np.ndarray = ros2_numpy.numpify(pointcloud_msgs_new.msg)
         pointcloud_array_old: np.ndarray = ros2_numpy.numpify(pointcloud_msgs_old.msg)
+
+        if self.visualize_intensity:
+            self.all_intensity_values_new += pointcloud_array_new["intensity"].tolist()
+            self.all_intensity_values_old += pointcloud_array_old["intensity"].tolist()
 
         if not np.allclose(
             pointcloud_array_new["intensity"],
@@ -222,6 +241,56 @@ class ConvertedRosbagValidator:
 
         return True
 
+    def _visualize_intensity(self):
+        # ヒストグラムを作成
+        fig = psub.make_subplots(
+            rows=1, cols=2, subplot_titles=("New Intensity", "Old Intensity")
+        )
+
+        fig.add_trace(
+            go.Histogram(
+                x=self.all_intensity_values_new[::10],
+                opacity=0.75,
+                name="New Intensity",
+                marker=dict(color="blue"),
+                xbins=dict(start=-10, end=300, size=1),
+            ),
+            row=1,
+            col=1,
+        )
+
+        fig.add_trace(
+            go.Histogram(
+                x=self.all_intensity_values_old[::10],
+                opacity=0.75,
+                name="Old Intensity",
+                marker=dict(color="red"),
+                xbins=dict(start=-10, end=300, size=1),
+            ),
+            row=1,
+            col=2,
+        )
+
+        # レイアウト設定
+        fig.update_layout(
+            title="Intensity Distribution Comparison",
+            xaxis_title="Intensity",
+            yaxis_title="Count",
+            barmode="overlay",
+            xaxis=dict(range=[-10, 300]),
+            xaxis2=dict(range=[-10, 300]),
+        )
+
+        # HTMLとして保存
+        fig.write_html(
+            f"./log/{self.t4dataset_id}/intensity_comparison_{self.t4dataset_id}.html"
+        )
+
+        # PNGとして保存
+        fig.write_image(
+            f"./log/{self.t4dataset_id}/intensity_comparison_{self.t4dataset_id}.png"
+        )
+
     def compare(self) -> bool:
         if not self._compare_topic_infos():
             return False
@@ -231,5 +300,8 @@ class ConvertedRosbagValidator:
 
         if not self._check_dummy_field():
             return False
+
+        if self.visualize_intensity:
+            self._visualize_intensity()
 
         return True

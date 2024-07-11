@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import os
 import argparse
 from pathlib import Path
 import yaml
@@ -103,6 +104,9 @@ def main(args):
     with open(args.config, "r") as file:
         config = yaml.safe_load(file)
 
+    # log directory
+    os.makedirs("./log", exist_ok=True)
+
     with tempfile.TemporaryDirectory() as temp_dir:
         work_dir_path = Path(temp_dir)
         webauto_t4dataset_interface = WebAutoT4DatasetInterface(
@@ -129,6 +133,8 @@ def main(args):
             validator = ConvertedRosbagValidator(
                 rosbag_path_new=work_dir_path / dataset_id / "input_bag",
                 rosbag_path_old=work_dir_path / dataset_id / "input_bag_old",
+                t4dataset_id=t4dataset_id,
+                visualize_intensity=args.visualize_intensity,
             )
             if validator.compare():
                 print("Validation result: OK")
@@ -163,6 +169,12 @@ if __name__ == "__main__":
         action="store_true",
         default=False,
         help="Upload the processed rosbags to webauto",
+    )
+    parser.add_argument(
+        "--visualize-intensity",
+        action="store_true",
+        default=False,
+        help="Visualize intensity values",
     )
 
     args = parser.parse_args()

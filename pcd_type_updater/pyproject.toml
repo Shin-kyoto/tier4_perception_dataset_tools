@@ -10,6 +10,9 @@ python = "^3.10"
 ros2-numpy = {path = "./lib/ros2_numpy"}
 transforms3d = "^0.4.2"
 pyyaml = "^6.0.1"
+plotly = "^5.22.0"
+pandas = "^2.2.2"
+kaleido = "^0.2.1"
 
 [build-system]
 requires = ["poetry-core"]
