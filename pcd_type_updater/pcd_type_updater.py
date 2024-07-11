@@ -97,6 +97,7 @@ class WebAutoT4DatasetInterface:
         )[0].stem
         # 右端から，_0を削除
         rosbag_name = rosbag_name[: rosbag_name.rfind("_")]
+        self.logger.info(f"Rosbag name: {rosbag_name}")
 
         os.rename(t4dataset_path_original, self.work_dir_path / dataset_id)
 
