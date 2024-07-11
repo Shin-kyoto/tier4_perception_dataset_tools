@@ -3,7 +3,8 @@ import argparse
 from pathlib import Path
 import yaml
 import subprocess
-from convert_pointcloud_types import process_bag, get_rosbag_options
+import tempfile
+from convert_pointcloud_types import process_bag
 from constant import current_webauto_versions
 from compare_bags import ConvertedRosbagValidator
 
@@ -99,9 +100,7 @@ def main(args):
     with open(args.config, "r") as file:
         config = yaml.safe_load(file)
 
-    # with tempfile.TemporaryDirectory() as temp_dir:
-    if True:
-        temp_dir = "/home/shintarotomie/src/github.com/Shin-kyoto/tier4_perception_dataset_tools/pcd_type_updater/"
+    with tempfile.TemporaryDirectory() as temp_dir:
         work_dir_path = Path(temp_dir)
         webauto_t4dataset_interface = WebAutoT4DatasetInterface(
             project_id=config["project_id"], work_dir_path=work_dir_path
