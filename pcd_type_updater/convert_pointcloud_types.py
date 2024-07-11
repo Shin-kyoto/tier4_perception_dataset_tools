@@ -483,6 +483,7 @@ def convert_xyzi_to_xyzirc(msg: PointCloud2):
     converted_array["x"] = input_array["x"]
     converted_array["y"] = input_array["y"]
     converted_array["z"] = input_array["z"]
+    # NOTE(Shin-kyoto): astypeをcasting="unsafe"で使用している
     converted_array["intensity"] = input_array["intensity"].astype(np.uint8)
 
     converted_msg = ros2_numpy.msgify(PointCloud2, converted_array)
