@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import os
+import shutil
 import argparse
 from pathlib import Path
 import yaml
@@ -97,8 +98,7 @@ class WebAutoT4DatasetInterface:
         # 右端から，_0を削除
         rosbag_name = rosbag_name[: rosbag_name.rfind("_")]
 
-        move_cmd = f"mv {t4dataset_path_original} {self.work_dir_path / dataset_id}"
-        subprocess.run(move_cmd, shell=True)
+        os.rename(t4dataset_path_original, self.work_dir_path / dataset_id)
 
         return dataset_id, rosbag_name
 
@@ -149,15 +149,11 @@ def main(args):
             rosbag_path_new: Path = work_dir_path / dataset_id / f"{rosbag_name}"
             process_bag(rosbag_path_old, rosbag_path_new)
             # 元のrosbagディレクトリを"input_bag"から"input_bag_old"に変更
-            subprocess.run(
-                f"mv {rosbag_path_old} {work_dir_path / dataset_id / 'input_bag_old'}",
-                shell=True,
-            )
+            os.rename(rosbag_path_old, work_dir_path / dataset_id / "input_bag_old")
+
             # 処理後のディレクトリを"input_bag"に変更
-            subprocess.run(
-                f"mv {rosbag_path_new} {work_dir_path / dataset_id / 'input_bag'}",
-                shell=True,
-            )
+            os.rename(rosbag_path_new, work_dir_path / dataset_id / "input_bag")
+
             # 2つのrosbagの内容を比較
             validator = ConvertedRosbagValidator(
                 rosbag_path_new=work_dir_path / dataset_id / "input_bag",
@@ -172,23 +168,22 @@ def main(args):
                 logger.error("Validation result: NG")
                 raise ValueError("Validation failed")
 
-            # 比較結果が問題なければ、元のディレクトリを削除
-            subprocess.run(
-                f"rm -r {work_dir_path / dataset_id / 'input_bag_old'}",
-                shell=True,
+            # 比較結果が問題なければ、元のrosbagのディレクトリを削除
+            shutil.rmtree(
+                work_dir_path / dataset_id / "input_bagの_old", ignore_errors=True
             )
+
             # t4datasetのディレクトリをWeb.Autoにアップロード
             if args.upload:
                 webauto_t4dataset_interface.push(
                     work_dir_path / dataset_id, t4dataset_id
                 )
 
-            # アップロード後のディレクトリを削除
-            subprocess.run(
-                f"rm -r {work_dir_path / dataset_id}",
-                shell=True,
-            )
             logger.removeHandler(file_handler)
+
+        for t4dataset_id in config["t4dataset_ids"]:
+            # アップロード後のディレクトリを削除
+            shutil.rmtree(work_dir_path / dataset_id, ignore_errors=True)
 
 
 if __name__ == "__main__":
