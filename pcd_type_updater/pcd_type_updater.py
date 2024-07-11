@@ -5,15 +5,35 @@ from pathlib import Path
 import yaml
 import subprocess
 import tempfile
+import logging
+import sys
 from convert_pointcloud_types import process_bag
 from constant import current_webauto_versions
 from compare_bags import ConvertedRosbagValidator
 
 
+# ロガーの設定
+def setup_logger(name, log_file, level=logging.INFO):
+    # ファイルハンドラ
+    file_handler = logging.FileHandler(log_file)
+
+    # コンソールハンドラ
+    console_handler = logging.StreamHandler(sys.stdout)
+
+    # ロガーを設定
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
+
+    return logger
+
+
 class WebAutoT4DatasetInterface:
-    def __init__(self, project_id: str, work_dir_path: Path):
+    def __init__(self, project_id: str, work_dir_path: Path, logger: logging.Logger):
         self.project_id = project_id
         self.work_dir_path = work_dir_path
+        self.logger: logging.Logger = logger
 
         self.webauto_version: str = (
             subprocess.run(
@@ -41,7 +61,7 @@ class WebAutoT4DatasetInterface:
         return dataset_path
 
     def _download_dataset(self, t4dataset_id: str) -> Path:
-        print(f"\nDownloading t4dataset: {t4dataset_id}")
+        self.logger.info(f"\nDownloading t4dataset: {t4dataset_id}")
 
         download_cmd = (
             f"webauto data annotation-dataset pull "
@@ -88,7 +108,7 @@ class WebAutoT4DatasetInterface:
         Args:
             t4dataset_path (Path): Path to the t4dataset
         """
-        print(f"Uploading t4dataset: {t4dataset_path}\n")
+        self.logger.info(f"Uploading t4dataset: {t4dataset_path}\n")
 
         upload_cmd = (
             f"webauto data annotation-dataset push-version"
@@ -106,14 +126,23 @@ def main(args):
 
     # log directory
     os.makedirs("./log", exist_ok=True)
+    # logger
+    logger: logging.Logger = setup_logger("Logger", "./log/pcd_type_updater.log")
 
     with tempfile.TemporaryDirectory() as temp_dir:
         work_dir_path = Path(temp_dir)
         webauto_t4dataset_interface = WebAutoT4DatasetInterface(
-            project_id=config["project_id"], work_dir_path=work_dir_path
+            project_id=config["project_id"], work_dir_path=work_dir_path, logger=logger
         )
 
         for t4dataset_id in config["t4dataset_ids"]:
+            # log directory for each t4dataset
+            os.makedirs(f"./log/{t4dataset_id}", exist_ok=True)
+            file_handler = logging.FileHandler(
+                f"./log/{t4dataset_id}/pcd_type_updater.log"
+            )
+            logger.addHandler(file_handler)
+
             dataset_id, rosbag_name = webauto_t4dataset_interface.pull(t4dataset_id)
 
             rosbag_path_old: Path = work_dir_path / dataset_id / "input_bag"
@@ -135,11 +164,13 @@ def main(args):
                 rosbag_path_old=work_dir_path / dataset_id / "input_bag_old",
                 t4dataset_id=t4dataset_id,
                 visualize_intensity=args.visualize_intensity,
+                logger=logger,
             )
             if validator.compare():
-                print("Validation result: OK")
+                logger.info("Validation result: OK")
             else:
-                raise ValueError("Validation result: NG")
+                logger.error("Validation result: NG")
+                raise ValueError("Validation failed")
 
             # 比較結果が問題なければ、元のディレクトリを削除
             subprocess.run(
@@ -157,6 +188,7 @@ def main(args):
                 f"rm -r {work_dir_path / dataset_id}",
                 shell=True,
             )
+            logger.removeHandler(file_handler)
 
 
 if __name__ == "__main__":

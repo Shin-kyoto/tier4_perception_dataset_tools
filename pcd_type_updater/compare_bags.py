@@ -1,6 +1,7 @@
 import numpy as np
 import yaml
 from pathlib import Path
+import logging
 from collections import defaultdict
 from typing import NamedTuple
 import plotly.graph_objects as go
@@ -94,7 +95,9 @@ class ConvertedRosbagValidator:
         rosbag_path_old: str,
         t4dataset_id: str,
         visualize_intensity: bool = False,
+        logger: logging.Logger = None,
     ):
+        self.logger: logging.Logger = logger
         self.rosbag_new = T4datasetRosbag(rosbag_path_new)
         self.rosbag_new.read()
         if not self.check_topic_num_consistency_with_yaml(
@@ -114,20 +117,19 @@ class ConvertedRosbagValidator:
             self.all_intensity_values_new: list[int] = []
             self.all_intensity_values_old: list[float] = []
 
-    @staticmethod
     def check_topic_num_consistency_with_yaml(
-        topic_nums: dict, topic_nums_yaml: dict
+        self, topic_nums: dict, topic_nums_yaml: dict
     ) -> bool:
         for topic_name in topic_nums.keys():
             if topic_name in topic_nums_yaml:
                 if topic_nums[topic_name] != topic_nums_yaml[topic_name]:
-                    print(
+                    self.logger.info(
                         f"Numbers of topic {topic_name} between rosbag and yaml are different"
                     )
                     return False
             else:
                 if topic_nums[topic_name] != 0:
-                    print(
+                    self.logger.info(
                         f"Numbers of topic {topic_name} between rosbag and yaml are different"
                     )
                     return False
@@ -136,12 +138,16 @@ class ConvertedRosbagValidator:
     def _compare_topic_infos(self) -> bool:
         # check if the number of topics is the same between the old and new rosbags
         if not self.rosbag_new.topic_nums == self.rosbag_old.topic_nums:
-            print("Numbers of topic between old rosbag and new rosbag are different")
+            self.logger.error(
+                "Numbers of topic between old rosbag and new rosbag are different"
+            )
             return False
 
         # check if the topic types are the same between the old and new rosbags
         if not self.rosbag_new.topic_type_map == self.rosbag_old.topic_type_map:
-            print("Topic types between old rosbag and new rosbag are different")
+            self.logger.error(
+                "Topic types between old rosbag and new rosbag are different"
+            )
             return False
 
         # check if the topic metadata is the same between the old and new rosbags
@@ -149,7 +155,9 @@ class ConvertedRosbagValidator:
             if not self.rosbag_new.topic_metadata[topic_name].equals(
                 self.rosbag_old.topic_metadata[topic_name]
             ):
-                print("Topic metadata between old rosbag and new rosbag are different")
+                self.logger.error(
+                    "Topic metadata between old rosbag and new rosbag are different"
+                )
                 return False
 
         return True
@@ -205,7 +213,7 @@ class ConvertedRosbagValidator:
 
             # 点群数が一緒であるべき
             if not self._compare_pointcloud_num(pointcloud_msg_new, pointcloud_msg_old):
-                print(
+                self.logger.error(
                     "Pointcloud number between old rosbag and new rosbag are different"
                 )
                 return False
@@ -214,14 +222,18 @@ class ConvertedRosbagValidator:
             if not self._compare_xyz_in_pointcloud(
                 pointcloud_msg_new, pointcloud_msg_old
             ):
-                print("XYZ value between old rosbag and new rosbag are different")
+                self.logger.error(
+                    "XYZ value between old rosbag and new rosbag are different"
+                )
                 return False
 
             # intensityの値が、所与のtoleranceの範囲で一緒であるべき
             if not self._compare_intensity_in_pointcloud(
                 pointcloud_msg_new, pointcloud_msg_old, tolerance=0.1
             ):
-                print("Intensity value between old rosbag and new rosbag are different")
+                self.logger.error(
+                    "Intensity value between old rosbag and new rosbag are different"
+                )
                 return False
 
         return True
