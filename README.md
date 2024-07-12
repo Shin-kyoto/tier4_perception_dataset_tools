@@ -7,6 +7,7 @@ This script helps update pointcloud type from `XYZI` to `XYZIRC`.
 Prerequisite:
 
 - Please use Webauto version `refs/tags/v0.35.0`.
+- clone `ros2_numpy` and `source ros2_numpy/install/setup.bash`
 
 First, please add t4dataset id in `./config/t4dataset_ids.yaml`.
 
