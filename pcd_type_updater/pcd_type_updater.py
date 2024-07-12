@@ -181,9 +181,6 @@ def main(args):
                 )
 
             logger.removeHandler(file_handler)
-
-        for t4dataset_id in config["t4dataset_ids"]:
-            # アップロード後のディレクトリを削除
             shutil.rmtree(work_dir_path / dataset_id, ignore_errors=True)
 
 
