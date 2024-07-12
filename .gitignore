@@ -5,7 +5,7 @@ tests/samplefiles/data
 
 # pcd_type_updater
 /pcd_type_updater/log
-/pcd_type_updater/config/t4dataset_ids.yaml
+/pcd_type_updater/config/
 
 # VS Code
 .vscode/
