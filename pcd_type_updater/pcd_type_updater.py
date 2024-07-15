@@ -192,6 +192,7 @@ def main(args):
 
             logger.removeHandler(file_handler)
             # t4datasetのディレクトリを削除
+            shutil.rmtree(work_dir_path / dataset_id, ignore_errors=False)
 
 
 if __name__ == "__main__":
