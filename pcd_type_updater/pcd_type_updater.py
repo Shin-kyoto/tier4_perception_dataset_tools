@@ -12,6 +12,7 @@ from convert_pointcloud_types import process_bag as convert_rosbag_intensity
 from constant import current_webauto_versions
 from compare_bags import ConvertedRosbagValidator
 from autoware_msg_bag_converter.main import convert_bag_in_directory as convert_rosbag_type
+from t4_devkit import Tier4
 
 # ロガーの設定
 def setup_logger(name, log_file, level=logging.INFO):
@@ -183,6 +184,10 @@ def main(args):
             # 処理後のディレクトリを"input_bag"に変更
             os.rename(rosbag_path_new, work_dir_path / dataset_id / "input_bag")
 
+            if Tier4("annotation", work_dir_path / dataset_id, verbose=False):
+                logger.info("Validation with t4-devkit: OK")
+            else:
+                logger.info("Validation with t4-devkit: NG")
 
             # t4datasetのディレクトリをWeb.Autoにアップロード
             if args.upload:

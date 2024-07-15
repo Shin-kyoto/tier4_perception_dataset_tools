@@ -8,6 +8,7 @@ Prerequisite:
 
 - Please use Webauto version `refs/tags/v0.35.0`.
 - clone `ros2_numpy` and `source ros2_numpy/install/setup.bash`
+- install `t4-devkit`. NOTE: We are planning to publish t4-devkit to PyPI in the future release.
 
 First, please add t4dataset id in `./config/t4dataset_ids.yaml`.
 
