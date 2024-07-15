@@ -12,6 +12,7 @@ pyyaml = "^6.0.1"
 plotly = "^5.22.0"
 pandas = "^2.2.2"
 kaleido = "^0.2.1"
+autoware_msg_bag_converter = {git = "ssh://git@github.com/hayato-m126/autoware_msg_bag_converter.git", rev = "main"}
 
 [build-system]
 requires = ["poetry-core"]
