@@ -8,10 +8,10 @@ import subprocess
 import tempfile
 import logging
 import sys
-from convert_pointcloud_types import process_bag
+from convert_pointcloud_types import process_bag as convert_rosbag_intensity
 from constant import current_webauto_versions
 from compare_bags import ConvertedRosbagValidator
-
+from autoware_msg_bag_converter.main import convert_bag_in_directory as convert_rosbag_type
 
 # ロガーの設定
 def setup_logger(name, log_file, level=logging.INFO):
@@ -147,18 +147,19 @@ def main(args):
             dataset_id, rosbag_name = webauto_t4dataset_interface.pull(t4dataset_id)
 
             rosbag_path_old: Path = work_dir_path / dataset_id / "input_bag"
+            rosbag_path_old_without_auto: Path = work_dir_path / dataset_id / "input_bag_without_auto"
             rosbag_path_new: Path = work_dir_path / dataset_id / f"{rosbag_name}"
-            process_bag(rosbag_path_old, rosbag_path_new)
-            # 元のrosbagディレクトリを"input_bag"から"input_bag_old"に変更
-            os.rename(rosbag_path_old, work_dir_path / dataset_id / "input_bag_old")
 
-            # 処理後のディレクトリを"input_bag"に変更
-            os.rename(rosbag_path_new, work_dir_path / dataset_id / "input_bag")
+            # rosbagのtypeからautoを削除
+            convert_rosbag_type(rosbag_path_old, rosbag_path_old_without_auto)
+
+            # rosbagのintensityを変換
+            convert_rosbag_intensity(rosbag_path_old_without_auto, rosbag_path_new)
 
             # 2つのrosbagの内容を比較
             validator = ConvertedRosbagValidator(
-                rosbag_path_new=work_dir_path / dataset_id / "input_bag",
-                rosbag_path_old=work_dir_path / dataset_id / "input_bag_old",
+                rosbag_path_new=rosbag_path_new,
+                rosbag_path_old=rosbag_path_old_without_auto,
                 t4dataset_id=t4dataset_id,
                 visualize_intensity=args.visualize_intensity,
                 logger=logger,
@@ -169,10 +170,18 @@ def main(args):
                 logger.error("Validation result: NG")
                 raise ValueError("Validation failed")
 
+
             # 比較結果が問題なければ、元のrosbagのディレクトリを削除
             shutil.rmtree(
-                work_dir_path / dataset_id / "input_bagの_old", ignore_errors=True
+                rosbag_path_old, ignore_errors=False
             )
+            shutil.rmtree(
+                rosbag_path_old_without_auto, ignore_errors=False
+            )
+
+            # 処理後のディレクトリを"input_bag"に変更
+            os.rename(rosbag_path_new, work_dir_path / dataset_id / "input_bag")
+
 
             # t4datasetのディレクトリをWeb.Autoにアップロード
             if args.upload:
