@@ -144,6 +144,7 @@ def main(args):
             )
             logger.addHandler(file_handler)
 
+            # t4datasetをdownload
             dataset_id, rosbag_name = webauto_t4dataset_interface.pull(t4dataset_id)
 
             rosbag_path_old: Path = work_dir_path / dataset_id / "input_bag"
@@ -190,7 +191,7 @@ def main(args):
                 )
 
             logger.removeHandler(file_handler)
-            shutil.rmtree(work_dir_path / dataset_id, ignore_errors=True)
+            # t4datasetのディレクトリを削除
 
 
 if __name__ == "__main__":
