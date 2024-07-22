@@ -115,6 +115,9 @@ class WebAutoT4DatasetInterface:
         """
         self.logger.info(f"Uploading t4dataset: {t4dataset_path}\n")
 
+        # NOTE(Shin-kyoto): Tentative. If these files and directories exist, you will not be able to upload them, so delete them.
+        os.remove(t4dataset_path / ".lock")
+        os.remove(t4dataset_path / ".caches")
         # NOTE(Shin-kyoto): A map directory is created when downloading, but must be deleted when uploading.
         shutil.rmtree(t4dataset_path / "map", ignore_errors=False)
         upload_cmd = (
