@@ -124,7 +124,7 @@ class WebAutoT4DatasetInterface:
         subprocess.run(upload_cmd, shell=True)
 
 
-def main(args):
+def main(args, work_dir_path):
     # Load YAML configuration
     with open(args.config, "r") as file:
         config = yaml.safe_load(file)
@@ -134,70 +134,67 @@ def main(args):
     # logger
     logger: logging.Logger = setup_logger("Logger", "./log/pcd_type_updater.log")
 
-    with tempfile.TemporaryDirectory() as temp_dir:
-        work_dir_path = Path(temp_dir)
-        webauto_t4dataset_interface = WebAutoT4DatasetInterface(
-            project_id=config["project_id"], work_dir_path=work_dir_path, logger=logger
+    webauto_t4dataset_interface = WebAutoT4DatasetInterface(
+        project_id=config["project_id"], work_dir_path=work_dir_path, logger=logger
+    )
+
+    for t4dataset_id in config["t4dataset_ids"]:
+        # log directory for each t4dataset
+        os.makedirs(f"./log/{t4dataset_id}", exist_ok=True)
+        file_handler = logging.FileHandler(f"./log/{t4dataset_id}/pcd_type_updater.log")
+        logger.addHandler(file_handler)
+
+        # t4datasetをdownload
+        dataset_id, rosbag_name = webauto_t4dataset_interface.pull(t4dataset_id)
+
+        rosbag_path_old: Path = work_dir_path / dataset_id / "input_bag"
+        rosbag_path_old_without_auto: Path = (
+            work_dir_path / dataset_id / "input_bag_without_auto"
         )
+        rosbag_path_new: Path = work_dir_path / dataset_id / f"{rosbag_name}"
 
-        for t4dataset_id in config["t4dataset_ids"]:
-            # log directory for each t4dataset
-            os.makedirs(f"./log/{t4dataset_id}", exist_ok=True)
-            file_handler = logging.FileHandler(
-                f"./log/{t4dataset_id}/pcd_type_updater.log"
-            )
-            logger.addHandler(file_handler)
+        # rosbagのtypeからautoを削除
+        convert_rosbag_type(rosbag_path_old, rosbag_path_old_without_auto)
 
-            # t4datasetをdownload
-            dataset_id, rosbag_name = webauto_t4dataset_interface.pull(t4dataset_id)
+        # rosbagのintensityを変換
+        convert_rosbag_intensity(rosbag_path_old_without_auto, rosbag_path_new)
 
-            rosbag_path_old: Path = work_dir_path / dataset_id / "input_bag"
-            rosbag_path_old_without_auto: Path = (
-                work_dir_path / dataset_id / "input_bag_without_auto"
-            )
-            rosbag_path_new: Path = work_dir_path / dataset_id / f"{rosbag_name}"
+        # 2つのrosbagの内容を比較
+        validator = ConvertedRosbagValidator(
+            rosbag_path_new=rosbag_path_new,
+            rosbag_path_old=rosbag_path_old_without_auto,
+            t4dataset_id=t4dataset_id,
+            visualize_intensity=args.visualize_intensity,
+            logger=logger,
+        )
+        if validator.compare():
+            logger.info("Validation result: OK")
+        else:
+            logger.error("Validation result: NG")
+            raise ValueError("Validation failed")
 
-            # rosbagのtypeからautoを削除
-            convert_rosbag_type(rosbag_path_old, rosbag_path_old_without_auto)
+        # 比較結果が問題なければ、元のrosbagのディレクトリを削除
+        shutil.rmtree(rosbag_path_old, ignore_errors=False)
+        shutil.rmtree(rosbag_path_old_without_auto, ignore_errors=False)
 
-            # rosbagのintensityを変換
-            convert_rosbag_intensity(rosbag_path_old_without_auto, rosbag_path_new)
+        # 処理後のディレクトリを"input_bag"に変更
+        os.rename(rosbag_path_new, work_dir_path / dataset_id / "input_bag")
 
-            # 2つのrosbagの内容を比較
-            validator = ConvertedRosbagValidator(
-                rosbag_path_new=rosbag_path_new,
-                rosbag_path_old=rosbag_path_old_without_auto,
-                t4dataset_id=t4dataset_id,
-                visualize_intensity=args.visualize_intensity,
-                logger=logger,
-            )
-            if validator.compare():
-                logger.info("Validation result: OK")
-            else:
-                logger.error("Validation result: NG")
-                raise ValueError("Validation failed")
+        try:
+            Tier4("annotation", work_dir_path / dataset_id, verbose=False)
+            logger.info("Validation with t4-devkit: OK")
+        except Exception as e:
+            error_message = str(e)
+            logger.info("Validation with t4-devkit: NG")
+            logger.error(error_message)
 
-            # 比較結果が問題なければ、元のrosbagのディレクトリを削除
-            shutil.rmtree(rosbag_path_old, ignore_errors=False)
-            shutil.rmtree(rosbag_path_old_without_auto, ignore_errors=False)
+        # t4datasetのディレクトリをWeb.Autoにアップロード
+        if args.upload:
+            webauto_t4dataset_interface.push(work_dir_path / dataset_id, t4dataset_id)
 
-            # 処理後のディレクトリを"input_bag"に変更
-            os.rename(rosbag_path_new, work_dir_path / dataset_id / "input_bag")
-
-            if Tier4("annotation", work_dir_path / dataset_id, verbose=False):
-                logger.info("Validation with t4-devkit: OK")
-            else:
-                logger.info("Validation with t4-devkit: NG")
-
-            # t4datasetのディレクトリをWeb.Autoにアップロード
-            if args.upload:
-                webauto_t4dataset_interface.push(
-                    work_dir_path / dataset_id, t4dataset_id
-                )
-
-            logger.removeHandler(file_handler)
-            # t4datasetのディレクトリを削除
-            shutil.rmtree(work_dir_path / dataset_id, ignore_errors=False)
+        logger.removeHandler(file_handler)
+        # t4datasetのディレクトリを削除
+        shutil.rmtree(work_dir_path / dataset_id, ignore_errors=False)
 
 
 if __name__ == "__main__":
@@ -212,6 +209,12 @@ if __name__ == "__main__":
         help="Upload the processed rosbags to webauto",
     )
     parser.add_argument(
+        "--work-dir",
+        type=str,
+        required=False,
+        help="Root directory for the dataset. If it does not exist, /tmp will be used",
+    )
+    parser.add_argument(
         "--visualize-intensity",
         action="store_true",
         default=False,
@@ -219,4 +222,10 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    main(args)
+    if args.work_dir:
+        work_dir_path = Path(args.work_dir)
+        main(args, work_dir_path)
+    else:
+        with tempfile.TemporaryDirectory() as temp_dir:
+            work_dir_path = Path(temp_dir)
+            main(args, work_dir_path)
