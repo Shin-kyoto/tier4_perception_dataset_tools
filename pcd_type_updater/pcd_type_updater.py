@@ -115,6 +115,8 @@ class WebAutoT4DatasetInterface:
         """
         self.logger.info(f"Uploading t4dataset: {t4dataset_path}\n")
 
+        # NOTE(Shin-kyoto): A map directory is created when downloading, but must be deleted when uploading.
+        shutil.rmtree(t4dataset_path / "map", ignore_errors=False)
         upload_cmd = (
             f"webauto data annotation-dataset push-version"
             f"--annotation-dataset-id {t4dataset_id}"
