@@ -5,6 +5,7 @@ tests/samplefiles/data
 
 # pcd_type_updater
 /pcd_type_updater/log
+/pcd_type_updater/work_dir
 /pcd_type_updater/config/
 
 # VS Code
