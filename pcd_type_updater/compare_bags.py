@@ -113,9 +113,8 @@ class ConvertedRosbagValidator:
 
         self.visualize_intensity: bool = visualize_intensity
         self.t4dataset_id: str = t4dataset_id
-        if self.visualize_intensity:
-            self.all_intensity_values_new: list[int] = []
-            self.all_intensity_values_old: list[float] = []
+        self.all_intensity_values_new: list[int] = []
+        self.all_intensity_values_old: list[float] = []
 
     def check_topic_num_consistency_with_yaml(
         self, topic_nums: dict, topic_nums_yaml: dict
@@ -194,9 +193,9 @@ class ConvertedRosbagValidator:
         pointcloud_array_new: np.ndarray = ros2_numpy.numpify(pointcloud_msgs_new.msg)
         pointcloud_array_old: np.ndarray = ros2_numpy.numpify(pointcloud_msgs_old.msg)
 
-        if self.visualize_intensity:
-            self.all_intensity_values_new += pointcloud_array_new["intensity"].tolist()
-            self.all_intensity_values_old += pointcloud_array_old["intensity"].tolist()
+        # if self.visualize_intensity:
+        self.all_intensity_values_new += pointcloud_array_new["intensity"].tolist()
+        self.all_intensity_values_old += pointcloud_array_old["intensity"].tolist()
 
         if not np.allclose(
             pointcloud_array_new["intensity"],
