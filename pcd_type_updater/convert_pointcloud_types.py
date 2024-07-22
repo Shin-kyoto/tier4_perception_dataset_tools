@@ -616,6 +616,8 @@ def process_bag(bag_path: Path, output_folder: Path):
                 converted_msg = convert_xyziradrt_to_xyzircaedt(msg)
             elif is_xyz_layout(msg):
                 converted_msg = convert_xyz_to_xyzirc(msg)
+            elif is_new_xyzirc_layout(msg):
+                raise ValueError("Already in XYZIRC layout")
             else:
                 print("Unsupported layout !. leaving the pointcloud as is")
                 converted_msg = msg
