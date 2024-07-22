@@ -49,7 +49,7 @@ class WebAutoT4DatasetInterface:
         )
 
         if self.webauto_version not in current_webauto_versions:
-            raise ValueError(
+            logger.warning(
                 f"Web.Auto version {self.webauto_version} is not supported. "
                 f"Please use one of the following versions: {current_webauto_versions}"
             )
