@@ -307,9 +307,11 @@ class ConvertedRosbagValidator:
 
     def compare(self) -> bool:
         if not self._compare_topic_infos():
+            self.logger.info("Topic infos are different.")
             return False
 
         if not self._compare_pointcloud_data():
+            self.logger.info("Pointcloud data are different.")
             return False
 
         if not self._check_dummy_field():
