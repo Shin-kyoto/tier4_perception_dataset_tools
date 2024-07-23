@@ -266,6 +266,11 @@ def is_old_xyziradrt_layout(msg: PointCloud2):
         or return_type_field.offset != 32
         or return_type_field.datatype != PointField.UINT8
         or return_type_field.count != 1
+    ) and (
+        return_type_field.name != "return_type"
+        or return_type_field.offset != 32
+        or return_type_field.datatype != PointField.INT8
+        or return_type_field.count != 1
     ):
         return False
 
