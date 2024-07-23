@@ -14,5 +14,5 @@ source install/setup.bash
 run `pcd_type_updater`
 
 ```bash
-python pcd_type_updater.py --config ./config/t4dataset_ids.yaml
+python pcd_type_updater.py --config ./config/t4dataset_ids.yaml --visualize-intensity --upload
 ```
