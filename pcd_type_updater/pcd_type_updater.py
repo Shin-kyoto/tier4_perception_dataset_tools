@@ -71,7 +71,8 @@ class WebAutoT4DatasetInterface:
         download_cmd = (
             f"webauto data annotation-dataset pull "
             f"--project-id {self.project_id} "
-            f"--annotation-dataset-id {t4dataset_id}"
+            f"--annotation-dataset-id {t4dataset_id} "
+            f"--asset-dir {self.work_dir_path}"
         )
         result = subprocess.run(
             download_cmd, shell=True, capture_output=True, text=True
