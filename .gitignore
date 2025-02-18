@@ -8,6 +8,10 @@ tests/samplefiles/data
 /pcd_type_updater/work_dir
 /pcd_type_updater/config/
 
+# fix_num_lidar_pts
+/fix-num-lidar-pts/.fix-num-lidar-pts
+/fix-num-lidar-pts/lib/tier4_perception_dataset
+
 # VS Code
 .vscode/
 
